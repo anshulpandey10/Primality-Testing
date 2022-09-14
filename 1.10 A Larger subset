@@ -1,0 +1,140 @@
+// God is Great
+/* Piyush Bali:- WHY SOMETHING IS IMPOSSIBLE?
+*/ 
+#include<bits/stdc++.h>
+using namespace std;
+#define ll                   long long
+#define ld                   long double
+#define pb                   push_back
+#define vi                   vector<int>
+#define scf                  scanf
+#define pf                   printf
+#define MAX                  1e9
+#define MIN                  -1e9
+#define mod                  1000000007
+#define mod9                 1000000009
+#define pi                   3.1415926535
+#define forci(p,n)           for(ll i=p;i<(ll)n;i++)
+#define forcj(p,n)           for(ll j=p;j<(ll)n;j++)
+#define bolt                 ios_base::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+#define test                 ll t;cin>>t;while(t--)
+//https://youtu.be/miZlLXzVL8I
+ 
+ll gcd(ll a,ll b){    if(b==0) return a;    return gcd(b,a%b);}
+ll lcm(ll a,ll b) {    return (a/gcd(a,b)*b);}
+ll expo(ll x, ll y) {ll res=1;x=x%mod;while(y>0){if(y&1)res=(1ll*res*x)%mod;
+    y=y>>1;x=(1ll*x*x)%mod;} return res;}
+ll ncr(ll n,ll r){ ll res=1; if(r>n-r)r=n-r; for(ll i=0;i<r;i++) {  res*=n-i;  res/=i+1; } return res;}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+vector<int> SieveOfEratosthenes(int n)
+{
+    bool prime[n + 1];
+    memset(prime, true, sizeof(prime));
+ 
+    for (int p = 2; p * p <= n; p++)
+    {
+       
+        if (prime[p] == true)
+        {
+         
+            for (int i = p * p; i <= n; i += p)
+                prime[i] = false;
+        }
+    }
+    vector<int> pri;
+    // Print all prime numbers
+    for (int p = 2; p <= n; p++)
+        if (prime[p])
+            pri.push_back(p);
+ 
+    return pri;      
+}
+ 
+signed main()
+{
+    vector<int> prime = SieveOfEratosthenes(1000);
+    test{
+ 
+        ll n;
+        cin>>n;
+        map<int,vector<int>> mp;
+        map<int,int> cntpri;
+        pair<int,int> maxprime = make_pair(0,0);
+        
+        vector<int> c;
+        int x;
+        forci(0,n)
+        {
+           
+            cin>>x;
+            c.clear();
+            forcj(0,prime.size())
+            {
+                if(x<prime[j])
+                    break;
+                
+                if(x%prime[j]==0)
+                {
+                    cntpri[prime[j]]+=1;
+                    if(cntpri[prime[j]]>maxprime.first)
+                       {
+                           maxprime.first = cntpri[prime[j]];
+                           maxprime.second = prime[j];
+                       }
+                    c.push_back(prime[j]);
+                }    
+ 
+            }
+            mp[x] = c;
+ 
+        }
+        cout<<maxprime.first<<" ";
+        
+        int ans = 1;
+        vector<int> gcds;
+        for(auto j: cntpri)
+        {  
+            ans = 0;
+             if(j.second == maxprime.first)
+              {
+                   for(auto i:mp)
+                    {    
+                                 
+                    if(binary_search(i.second.begin(), i.second.end(),j.first))
+                        ans = gcd(i.first,ans);
+                     }
+             }
+           gcds.push_back(ans);
+        }
+        int anwar =0;
+        vector<bool> checkpri(prime.size(),false);
+        forci(0,gcds.size())
+        {
+            ans = 0;
+            x = gcds[i];
+         forcj(0,prime.size())
+            {
+                if(x<prime[j])
+                    break;
+                
+                if(x%prime[j]==0 && !checkpri[j])
+                  {
+                      checkpri[j] = true;
+                      ans++;
+                  }
+                 
+            }
+            anwar+=((ans)*(ans+1))/2;  
+        }   
+        cout<<anwar<<endl;
+        
+ 
+ 
+         
+    }
+ 
+ 
+ 
+ 
+}
+ 
