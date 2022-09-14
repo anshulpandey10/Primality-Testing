@@ -1,0 +1,343 @@
+#include <memory.h>
+#include <ctime>
+#include <cstdio>
+#include <cstdlib>
+#include <climits>
+#include <cctype>
+#include <cstring>
+#include <climits>
+#include <cmath>
+#include <vector>
+#include <string>
+#include <memory>
+#include <numeric>
+#include <limits>
+#include <functional>
+#include <tuple>
+#include <set>
+#include <map>
+#include <bitset>
+#include <stack>
+#include <queue>
+#include <unordered_set>
+#include <unordered_map>
+#include <algorithm>
+#include <iostream>
+ 
+using namespace std;
+ 
+#define PROFILE_START(i)    clock_t start##i = clock()
+#define PROFILE_STOP(i)     fprintf(stderr, "elapsed time (" #i ") = %f\n", double(clock() - start##i) / CLOCKS_PER_SEC)
+ 
+typedef long long           ll;
+typedef unsigned long long  ull;
+ 
+#define MAXP    500
+ 
+struct PrimeFactors {
+    vector<pair<int, int>>  primeFactors;
+ 
+    PrimeFactors() {
+    }
+ 
+    explicit PrimeFactors(int x) {
+        build(x);
+    }
+ 
+    void build(int x) {
+        primeFactors.clear();
+ 
+        int root = int(sqrt(x));
+        if (root >= 2) {
+            int cnt = 0;
+            while (x % 2 == 0) {
+                x /= 2;
+                cnt++;
+            }
+            if (cnt > 0)
+                primeFactors.push_back(make_pair(2, cnt));
+        }
+ 
+        for (int i = 3; i <= root; i += 2) {
+            int cnt = 0;
+            while (x % i == 0) {
+                x /= i;
+                cnt++;
+            }
+            if (cnt > 0)
+                primeFactors.push_back(make_pair(i, cnt));
+        }
+ 
+        if (x > 1)
+            primeFactors.push_back(make_pair(x, 1));
+    }
+ 
+    // find all prime numbers and prime factors from 1 to n
+    static void buildAll(int n, vector<int>& primes, vector<PrimeFactors>& primeFactors) {
+        primes.clear();
+        primeFactors = vector<PrimeFactors>(n + 1);
+        if (n < 2)
+            return;
+ 
+        if (n >= 2) {
+            primes.push_back(2);
+            primeFactors[2].primeFactors.push_back(make_pair(2, 1));
+        }
+ 
+        for (int i = 3; i <= n; i++) {
+            bool isPrime = true;
+            int root = int(sqrt(i));
+            for (int j = 0; primes[j] <= root; j++) {
+                if (i % primes[j] == 0) {
+                    primeFactors[i] = primeFactors[i / primes[j]];
+                    if (primeFactors[i].primeFactors.back().first == primes[j])
+                        primeFactors[i].primeFactors.back().second++;
+                    else
+                        primeFactors[i].primeFactors.push_back(make_pair(primes[j], 1));
+                    isPrime = false;
+                    break;
+                }
+            }
+            if (isPrime) {
+                primes.push_back(i);
+                primeFactors[i].primeFactors.push_back(make_pair(i, 1));
+            }
+        }
+    }
+};
+ 
+ 
+int gPrimes[] = {
+    2,   3,   5,   7,  11,  13,  17,  19,  23,  29,
+    31,  37,  41,  43,  47,  53,  59,  61,  67,  71,
+    73,  79,  83,  89,  97, 101, 103, 107, 109, 113,
+    127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
+    179, 181, 191, 193, 197, 199, 211, 223, 227, 229,
+    233, 239, 241, 251, 257, 263, 269, 271, 277, 281,
+    283, 293, 307, 311, 313, 317, 331, 337, 347, 349,
+    353, 359, 367, 373, 379, 383, 389, 397, 401, 409,
+    419, 421, 431, 433, 439, 443, 449, 457, 461, 463,
+    467, 479, 487, 491, 499,
+};
+vector<int> gP2I;
+ 
+int gN;
+int gPN;
+ 
+struct ValueT {
+    ull x[4];
+ 
+    ValueT() {
+        x[0] = x[1] = x[2] = x[3] = 0;
+    }
+ 
+    bool operator <(const ValueT& rhs) const {
+        if (x[3] != rhs.x[3])
+            return x[3] < rhs.x[3];
+        if (x[2] != rhs.x[2])
+            return x[2] < rhs.x[2];
+        if (x[1] != rhs.x[1])
+            return x[1] < rhs.x[1];
+        return x[0] < rhs.x[0];
+    }
+ 
+    bool operator ==(const ValueT& rhs) const {
+        return x[3] == rhs.x[3] && x[2] == rhs.x[2]
+            && x[1] == rhs.x[1] && x[0] == rhs.x[0];
+    }
+ 
+    bool operator !=(const ValueT& rhs) const {
+        return !operator ==(rhs);
+    }
+ 
+    void add(int idx, int d) {
+        int i = idx >> 5;
+        int j = (idx & 31) << 1;
+ 
+        ull t = (((x[i] >> j) & 3) + d) % 3;
+ 
+        x[i] = (x[i] & ~(3ull << j)) | (t << j);
+    }
+ 
+    void set(int idx, int d) {
+        int i = idx >> 5;
+        int j = (idx & 31) << 1;
+ 
+        x[i] += ull(d) << j;
+    }
+ 
+    void add(const ValueT& lhs, const ValueT& rhs) {
+        for (int i = 0; i < 4; i++) {
+            x[i] = 0;
+            if (!lhs.x[i] && !rhs.x[i])
+                continue;
+ 
+            int j;
+            ull t1 = lhs.x[i], t2 = rhs.x[i];
+            for (j = 0; t1 && t2; j += 2, t1 >>= 2, t2 >>= 2)
+                x[i] += (((t1 & 3) + (t2 & 3)) % 3) << j;
+ 
+            if (j < 64)
+                x[i] += (t1 | t2) << j;
+        }
+    }
+ 
+    void comp(const ValueT& rhs) {
+        for (int i = 0; i < 4; i++) {
+            x[i] = 0;
+            if (!rhs.x[i])
+                continue;
+ 
+            ull t = rhs.x[i];
+            for (int j = 0; t; j += 2, t >>= 2)
+                x[i] += ((3 - (t & 3)) % 3) << j;
+        }
+    }
+};
+ 
+namespace std {
+    template <>
+    struct hash<ValueT> {
+        size_t operator()(const ValueT& k) const {
+            //return (k.x[0] >> 1) ^ (k.x[1] << 1) ^ (k.x[2] >> 1) ^ (k.x[3] << 1);
+            return (k.x[0] * 31) ^ (k.x[1] * 37) ^ (k.x[2] * 7) ^ (k.x[3] * 5);
+        }
+    };
+}
+ 
+#define MAXN    1000
+ 
+vector<PrimeFactors> gPF;
+ValueT gX[MAXN];
+ValueT gXC[MAXN];
+ 
+#if 0
+map<ValueT, ll> gDP_0;
+map<ValueT, ll> gDP_1;
+map<ValueT, ll> gDP_2;
+map<ValueT, ll> gDP2_0;
+map<ValueT, ll> gDP2_1;
+map<ValueT, ll> gDP2_2;
+#else
+unordered_map<ValueT, ll> gDP_0;
+unordered_map<ValueT, ll> gDP_1;
+unordered_map<ValueT, ll> gDP_2;
+unordered_map<ValueT, ll> gDP2_0;
+unordered_map<ValueT, ll> gDP2_1;
+unordered_map<ValueT, ll> gDP2_2;
+#endif
+ 
+int main(void) {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+ 
+    {
+        gPN = sizeof(gPrimes) / sizeof(gPrimes[0]);
+        gP2I.resize(MAXP + 1);
+        for (int i = 0; i < gPN; i++)
+            gP2I[gPrimes[i]] = i;
+ 
+        vector<int> primes;
+        PrimeFactors::buildAll(MAXP, primes, gPF);
+    }
+ 
+    cin >> gN;
+    for (int i = 0; i < gN; i++) {
+        int K, P;
+        cin >> K;
+ 
+        unordered_map<int, int> M;
+        for (int j = 0; j < K; j++) {
+            cin >> P;
+            if (P == 1)
+                continue;
+ 
+            for (auto& it : gPF[P].primeFactors)
+                M[it.first] += it.second;
+        }
+ 
+        for (auto& it : M) {
+            int n = it.second % 3;
+            if (!n)
+                continue;
+            gX[i].set(gP2I[it.first], n);
+        }
+    }
+    sort(gX, gX + gN);
+ 
+    for (int i = 0; i < gN; i++)
+        gXC[i].comp(gX[i]);
+ 
+    static ValueT cv;
+ 
+    unordered_set<ValueT> S;
+    unordered_set<ValueT> S2;
+    for (int i = 0; i < gN; i++) {
+        S.insert(gXC[i]);
+        for (int j = i; j < gN; j++) {
+            cv.add(gXC[i], gXC[j]);
+            S2.insert(cv);
+        }
+    }
+ 
+    ll ans = 0;
+ 
+    for (int i = 0; i < gN / 2; i++) {
+        auto it = gDP_2.find(gXC[i]);
+        if (it != gDP_2.end())
+            ans += it->second;
+ 
+        for (auto& it : gDP_1) {
+            cv.add(gX[i], it.first);
+            if (S.find(cv) != S.end())
+                gDP_2[cv] += it.second;
+        }
+        for (auto& it : gDP_0) {
+            cv.add(gX[i], it.first);
+            if (S2.find(cv) != S2.end())
+                gDP_1[cv] += it.second;
+        }
+        ++gDP_0[gX[i]];
+    }
+ 
+    for (int i = gN / 2; i < gN; i++) {
+        auto it = gDP2_2.find(gXC[i]);
+        if (it != gDP2_2.end())
+            ans += it->second;
+ 
+        for (auto& it : gDP2_1) {
+            cv.add(gX[i], it.first);
+            if (S.find(cv) != S.end())
+                gDP2_2[cv] += it.second;
+        }
+        for (auto& it : gDP2_0) {
+            cv.add(gX[i], it.first);
+            if (S2.find(cv) != S2.end())
+                gDP2_1[cv] += it.second;
+        }
+        ++gDP2_0[gX[i]];
+    }
+ 
+    for (auto& it : gDP_2) {
+        cv.comp(it.first);
+        auto it2 = gDP2_0.find(cv);
+        if (it2 != gDP2_0.end())
+            ans += it.second * it2->second;
+    }
+    for (auto& it : gDP_1) {
+        cv.comp(it.first);
+        auto it2 = gDP2_1.find(cv);
+        if (it2 != gDP2_1.end())
+            ans += it.second * it2->second;
+    }
+    for (auto& it : gDP_0) {
+        cv.comp(it.first);
+        auto it2 = gDP2_2.find(cv);
+        if (it2 != gDP2_2.end())
+            ans += it.second * it2->second;
+    }
+ 
+    cout << ans << endl;
+ 
+    return 0;
+}
