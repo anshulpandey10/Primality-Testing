@@ -1,0 +1,57 @@
+#include <bits/stdc++.h>
+using namespace std;
+bool isprime(int n){
+	for(int i=2;i<n/2;i++)
+	{
+		if(n%i==0)
+	     return false;
+	}
+	return true;
+}
+int main() {
+	int n;
+	cin>>n;
+	int a[n];
+	for(int i=0;i<n;i++)
+	cin>>a[i];
+
+	priority_queue<int>pq(a,a+n);
+     
+	int i=n-1;
+	while(pq.empty()==false)
+	{
+		a[i]=pq.top();
+		pq.pop();
+		i--;
+	} 
+    
+	int lprime=0,sprime=0;
+	for(int i=0;i<n;i++)
+	{ bool z=false;
+		if(a[i]>=2)
+		{
+         z=isprime(a[i]);
+		}
+		if(z==true)
+		{sprime=a[i];
+		break;}
+	}
+	for(int i=n-1;i>=0;i--)
+	{   bool z=false;
+		if(a[i]>=2)
+		{
+         z=isprime(a[i]);
+		}
+		if(z==true)
+		{lprime=a[i];
+		break;} 
+	} 
+
+	if(lprime==0 || sprime==0) 
+	cout<<-1<<endl;
+
+	else
+	cout<<lprime-sprime<<endl;
+
+
+}
